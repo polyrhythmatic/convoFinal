@@ -2,17 +2,32 @@ var rilexicon = new RiLexicon;
 
 var transcript;
 var pictureBlob = {};
+var body = {};
 
 function preload() {
-    mySound = loadSound('data/moon_korean.wav');
-    //transcript = loadJSON('mike_sara.js', loadAPI(transcript[0].words[0][0]));
-    $.getJSON('data/moon_korean.js').done(function(data) {
-        transcript = data;
-        associatePictures(data);
+    $.getJSON('data/transcrips.js').done(function(data) {
+        body = data;
+        for (i in body) {
+            body[i].recording = loadSound('data/' + body[i].recording);
+            $.getJSON('data/' + body[i].transcript).done(function(data) {
+                body[i].loadedTranscript = data;
+                associatePictures(data, theSetup);
+            });
+        }
     });
 }
 
-function associatePictures(data) {
+// function loadContent() {
+//     for (i in body) {
+//         body[i].recording = loadSound('data/' + body.recording);
+//         $.getJSON('data/' + body.transcript).done(function(data) {
+//             body[i].loadedTranscript = data;
+//             associatePictures(data);
+//         });
+//     }
+// }
+
+function associatePictures(data, callback) {
     for (var i = 0, max = data.length; i < max; i++) {
         for (var j = 0, jmax = data[i].words.length; j < jmax; j++) {
             searchWord = data[i].words[j][0];
@@ -24,22 +39,29 @@ function associatePictures(data) {
             }
         }
     }
+    callback();
 };
 
 var startTime = 0;
 
-function setup() {
-    mySound.play();
-    startTime = Date.now();
-    var counterMax = transcript.length;
+function setup() {}
+
+function theSetup() {
+    if (body[1].recording) {
+        body[1].recording.play();
+        startTime = Date.now();
+        var counterMax = transcript.length;
+    }
 }
+
+
 
 var counter = 0;
 
 function draw() {
     // console.log(counter + " at time " + currTime(Date.now()))
-    if (transcript[counter].start < currTime(Date.now())) {
-        var subTranscript = transcript[counter].words;
+    if (body[1].transcript[counter].start < currTime(Date.now())) {
+        var subTranscript = body[1].transcript[counter].words;
         var line = '';
         for (var i = 0, max = subTranscript.length; i < max; i++) {
             word = subTranscript[i][0];
@@ -51,7 +73,7 @@ function draw() {
         }
         $("#subtitle").html(line);
     }
-    if (transcript[counter].end < currTime(Date.now())) {
+    if (body[1].transcript[counter].end < currTime(Date.now())) {
         counter++;
     }
 }
