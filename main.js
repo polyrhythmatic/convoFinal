@@ -2,32 +2,25 @@ var rilexicon = new RiLexicon;
 
 var transcript;
 var pictureBlob = {};
-var body = {};
+var body;
 
-function preload() {
-    $.getJSON('data/transcrips.js').done(function(data) {
-        body = data;
-        for (i in body) {
-            body[i].recording = loadSound('data/' + body[i].recording);
-            $.getJSON('data/' + body[i].transcript).done(function(data) {
-                body[i].loadedTranscript = data;
-                associatePictures(data, theSetup);
-            });
-        }
+$.getJSON('data/transcrips.js').done(function(data) {
+    body = data;
+    for (var i = 0; i < body.length; i++) {
+        body[i].recording = loadSound('data/' + body[i].recording);
+        getTranscript(body[i].transcript, i);
+    }
+});
+
+function getTranscript(transcriptName, num) {
+    $.getJSON('data/' + transcriptName).done(function(data) {
+        body[num].loadedTranscript = data;
+        console.log("successfully loaded " + data);
+        associatePictures(data);
     });
 }
 
-// function loadContent() {
-//     for (i in body) {
-//         body[i].recording = loadSound('data/' + body.recording);
-//         $.getJSON('data/' + body.transcript).done(function(data) {
-//             body[i].loadedTranscript = data;
-//             associatePictures(data);
-//         });
-//     }
-// }
-
-function associatePictures(data, callback) {
+function associatePictures(data) {
     for (var i = 0, max = data.length; i < max; i++) {
         for (var j = 0, jmax = data[i].words.length; j < jmax; j++) {
             searchWord = data[i].words[j][0];
@@ -39,42 +32,45 @@ function associatePictures(data, callback) {
             }
         }
     }
-    callback();
 };
 
 var startTime = 0;
-
-function setup() {}
-
-function theSetup() {
-    if (body[1].recording) {
-        body[1].recording.play();
-        startTime = Date.now();
-        var counterMax = transcript.length;
-    }
-}
-
-
-
 var counter = 0;
+var currentConvoNum = 0;
+var isPlaying = false;
+var countMax = 0;
 
 function draw() {
-    // console.log(counter + " at time " + currTime(Date.now()))
-    if (body[1].transcript[counter].start < currTime(Date.now())) {
-        var subTranscript = body[1].transcript[counter].words;
-        var line = '';
-        for (var i = 0, max = subTranscript.length; i < max; i++) {
-            word = subTranscript[i][0];
-            line += word + ' ';
-            if (pictureBlob[word]) {
-                console.log(word);
-                $("#imageDiv").html('<img src=' + pictureBlob[word] + ' style=\"height:500px\"/>');
-            }
+    //console.log(counter + " at time " + currTime(Date.now()))
+    if (body[currentConvoNum].loadedTranscript) {
+        countMax = body[currentConvoNum].loadedTranscript.length;
+        if (!isPlaying) {
+            body[currentConvoNum].recording.play();
+            startTime = Date.now();
+            isPlaying = true;
+            counter = 0;
         }
-        $("#subtitle").html(line);
-    }
-    if (body[1].transcript[counter].end < currTime(Date.now())) {
-        counter++;
+        console.log(counter + " and countmax " + countMax)
+        if (body[currentConvoNum].loadedTranscript[counter].start < currTime(Date.now())) {
+            var subTranscript = body[currentConvoNum].loadedTranscript[counter].words;
+            var line = '';
+            for (var i = 0, max = subTranscript.length; i < max; i++) {
+                word = subTranscript[i][0];
+                line += word + ' ';
+                if (pictureBlob[word]) {
+                    //console.log(word);
+                    $("#imageDiv").html('<img src=' + pictureBlob[word] + ' style=\"height:500px\"/>');
+                }
+            }
+            $("#subtitle").html(line);
+        }
+        if (body[currentConvoNum].loadedTranscript[counter].end < currTime(Date.now()) && counter < countMax-1) {
+            counter++;
+        }
+        if (body[currentConvoNum].recording.duration() < currTime(Date.now())) {
+            currentConvoNum++
+            isPlaying = false;
+        }
     }
 }
 
